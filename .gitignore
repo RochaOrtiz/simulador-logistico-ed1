@@ -1,0 +1,17 @@
+﻿# Entorno virtual
+.venv/
+
+# Archivos temporales de Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Archivos privados
+.env
+
+# Configuracion local
+.vscode/
+
+# Archivos generados
+build/
+dist/
