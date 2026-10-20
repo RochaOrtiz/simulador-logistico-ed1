@@ -110,7 +110,10 @@ def test_tarjeta_paquetes_conecta_agregar_buscar_eliminar_y_despacho():
         "P01",
         "P03",
     ]
-    assert "P01" in card._package_list.controls[0].value
+    assert (
+        card._package_list.controls[0]
+        .content.controls[1].controls[0].value.startswith("P01")
+    )
 
     card._search_code.value = "p03"
     card._on_search(None)

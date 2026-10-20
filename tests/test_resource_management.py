@@ -175,8 +175,8 @@ def test_tarjeta_vehiculos_conecta_operaciones_y_actualiza_estado():
     card._on_add(None)
 
     assert card._selected_item.value == "V1"
-    assert "estado=En ruta" in card._item_list.controls[0].value
-    assert "capacidad_maxima=1200.0" in card._item_list.controls[0].value
+    assert "estado=En ruta" in card._item_list.controls[0].content.value
+    assert "capacidad_maxima=1200.0" in card._item_list.controls[0].content.value
 
     card._search_code.value = "v1"
     card._on_search(None)
@@ -201,7 +201,10 @@ def test_tarjeta_almacenes_conecta_operaciones_y_valida_campos():
     card._on_add(None)
 
     assert card._selected_item.value == "A1"
-    assert "ubicacion=Zona Norte" in card._item_list.controls[0].value
+    assert (
+        card._item_list.controls[0].content.value
+        == "Código: A1\nNombre: Central\nUbicación: Zona Norte"
+    )
 
     card._search_code.value = "a1"
     card._on_search(None)

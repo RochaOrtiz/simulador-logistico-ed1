@@ -270,6 +270,20 @@ def test_historial_flet_habilita_botones_y_sincroniza_todas_las_secciones():
     view.build(page)
     history = view._history_card
 
+    assert page.theme_mode.name == "LIGHT"
+    assert page.dark_theme.color_scheme_seed.value == "blue300"
+    assert view._sections[0].col == {
+        "xs": 12,
+        "sm": 12,
+        "md": 6,
+        "lg": 6,
+    }
+    assert view._sections[4].col == {
+        "xs": 12,
+        "sm": 12,
+        "md": 12,
+        "lg": 12,
+    }
     assert history._undo_button.disabled is True
     assert history._redo_button.disabled is True
 
@@ -282,8 +296,11 @@ def test_historial_flet_habilita_botones_y_sincroniza_todas_las_secciones():
 
     assert history._undo_button.disabled is False
     assert history._redo_button.disabled is True
-    assert view._package_card._package_list.controls[0].value.startswith("1. P1")
-    assert history._undo_list.controls[0].value == "Agregar paquete: P1"
+    assert (
+        view._package_card._package_list.controls[0]
+        .content.controls[1].controls[0].value.startswith("P1")
+    )
+    assert history._undo_list.controls[0].content.value == "Agregar paquete: P1"
 
     history._on_undo(None)
     assert controller.obtener_estado()["paquetes"] == []
@@ -294,7 +311,10 @@ def test_historial_flet_habilita_botones_y_sincroniza_todas_las_secciones():
 
     history._on_redo(None)
     assert controller.obtener_estado()["paquetes"][0].codigo == "P1"
-    assert view._package_card._package_list.controls[0].value.startswith("1. P1")
+    assert (
+        view._package_card._package_list.controls[0]
+        .content.controls[1].controls[0].value.startswith("P1")
+    )
     assert history._undo_button.disabled is False
     assert history._redo_button.disabled is True
     assert page.update_count >= 4
@@ -355,9 +375,16 @@ def test_historial_refresca_paquetes_recursos_y_rutas_en_undo_y_redo():
     assert [item.codigo for item in controller.obtener_estado()["vehiculos"]] == ["V1"]
     assert [item.codigo for item in controller.obtener_estado()["almacenes"]] == ["A1"]
     assert [item.codigo for item in controller.obtener_estado()["rutas"]] == ["R1"]
-    assert package_card._package_list.controls[0].value.startswith("1. P1")
-    assert vehicle_card._item_list.controls[0].value.startswith("Vehiculo(codigo=V1")
-    assert warehouse_card._item_list.controls[0].value.startswith("Almacen(codigo=A1")
+    assert (
+        package_card._package_list.controls[0]
+        .content.controls[1].controls[0].value.startswith("P1")
+    )
+    assert vehicle_card._item_list.controls[0].content.value.startswith(
+        "Vehiculo(codigo=V1"
+    )
+    assert warehouse_card._item_list.controls[0].content.value == (
+        "Código: A1\nNombre: Central\nUbicación: Norte"
+    )
     assert route_card._route_summary.value.startswith("Ruta: R1")
     assert history._redo_button.disabled is True
 

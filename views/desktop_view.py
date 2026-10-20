@@ -5,6 +5,7 @@ try:
 except ImportError:  # pragma: no cover
     ft = None
 
+from views.theme import PALETTE
 from views.responsive_components import (
     ActionHistoryCard,
     CircularRouteCard,
@@ -23,6 +24,7 @@ class DesktopView:
         self._navigation_bar = None
         self._page = None
         self._selected_section = 0
+        self._resize_width = None
         self._package_card = None
         self._vehicle_card = None
         self._route_card = None
@@ -69,10 +71,15 @@ class DesktopView:
         self._sections = [
             ft.Container(
                 content=content,
-                col={"xs": 12, "sm": 12, "md": 6, "lg": 3},
-                padding=8,
+                col={
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 12 if index == 4 else 6,
+                    "lg": 12 if index == 4 else 6,
+                },
+                padding=6,
             )
-            for content in section_contents
+            for index, content in enumerate(section_contents)
         ]
         self._navigation_bar = ft.NavigationBar(
             destinations=[
@@ -103,6 +110,19 @@ class DesktopView:
         )
 
         page.title = "Simulador logístico"
+        page.theme_mode = ft.ThemeMode.LIGHT
+        page.theme = ft.Theme(
+            color_scheme_seed=PALETTE["primary"],
+            scaffold_bgcolor=PALETTE["background"],
+            card_bgcolor=PALETTE["surface"],
+        )
+        page.dark_theme = ft.Theme(
+            color_scheme_seed=ft.Colors.BLUE_300,
+            scaffold_bgcolor=PALETTE["background"],
+            card_bgcolor=PALETTE["surface"],
+        )
+        page.bgcolor = PALETTE["background"]
+        page.padding = 20
         page.vertical_alignment = "start"
         page.navigation_bar = self._navigation_bar
         page.on_resize = self._on_resize
@@ -112,12 +132,19 @@ class DesktopView:
                     ft.ResponsiveRow(
                         controls=self._sections,
                         columns=12,
-                        spacing=8,
-                        run_spacing=8,
+                        breakpoints={
+                            "xs": 0,
+                            "sm": 600,
+                            "md": 760,
+                            "lg": 1200,
+                        },
+                        spacing=12,
+                        run_spacing=12,
                     )
                 ],
                 expand=True,
                 scroll=ft.ScrollMode.AUTO,
+                spacing=12,
             ),
         )
         self._update_layout()
@@ -136,7 +163,9 @@ class DesktopView:
         self._page.update()
 
     def _is_mobile_width(self):
-        width = self._page.width
+        width = self._resize_width
+        if width is None:
+            width = self._page.width
         if width is None:
             window = getattr(self._page, "window", None)
             width = getattr(window, "width", None)
@@ -160,7 +189,8 @@ class DesktopView:
         self._selected_section = selected_index
         self._update_layout()
 
-    def _on_resize(self, _event):
+    def _on_resize(self, event):
+        self._resize_width = getattr(event, "width", None)
         self._update_layout()
 
     def run(self, web=False, host=None, port=0):

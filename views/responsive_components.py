@@ -5,6 +5,81 @@ try:
 except ImportError:  # pragma: no cover - Flet no está disponible en algunos entornos
     ft = None
 
+from views.theme import PALETTE
+
+
+def _button(label, secondary=False, **kwargs):
+    return ft.Button(
+        label,
+        style=ft.ButtonStyle(
+            bgcolor=(
+                PALETTE["surface"] if secondary else PALETTE["primary"]
+            ),
+            color=(
+                PALETTE["text"] if secondary else PALETTE["on_primary"]
+            ),
+            side=ft.BorderSide(1, PALETTE["border"]) if secondary else None,
+            padding=12,
+        ),
+        width=150,
+        **kwargs,
+    )
+
+
+def _panel(content):
+    return ft.Container(
+        content=content,
+        bgcolor=PALETTE["surface"],
+        border=ft.Border.all(1, PALETTE["border"]),
+        padding=20,
+        border_radius=12,
+    )
+
+
+def _set_status_style(message, tone):
+    message.style = ft.TextStyle(color=PALETTE[tone])
+
+
+def _text_field(label, **kwargs):
+    return ft.TextField(
+        label=label,
+        border_color=PALETTE["border"],
+        focused_border_color=PALETTE["primary"],
+        border_radius=8,
+        text_style=ft.TextStyle(color=PALETTE["text"]),
+        label_style=ft.TextStyle(color=PALETTE["text_secondary"]),
+        **kwargs,
+    )
+
+
+def _dropdown(label, **kwargs):
+    return ft.Dropdown(
+        label=label,
+        border_color=PALETTE["border"],
+        focused_border_color=PALETTE["primary"],
+        border_radius=8,
+        text_style=ft.TextStyle(color=PALETTE["text"]),
+        label_style=ft.TextStyle(color=PALETTE["text_secondary"]),
+        **kwargs,
+    )
+
+
+def _form_row(fields, columns):
+    return ft.ResponsiveRow(
+        controls=[
+            ft.Container(
+                content=field,
+                col=column,
+                alignment=ft.Alignment(0, 0) if isinstance(field, ft.Button) else None,
+            )
+            for field, column in zip(fields, columns)
+        ],
+        columns=12,
+        breakpoints={"xs": 0, "sm": 600, "md": 850, "lg": 1200},
+        spacing=12,
+        run_spacing=8,
+    )
+
 
 class ActionHistoryCard:
     """Muestra y ejecuta las operaciones disponibles en el historial."""
@@ -13,40 +88,47 @@ class ActionHistoryCard:
         self.controller = controller
         self.on_model_change = on_model_change
         self.title = title
+        self._undo_title = None
+        self._redo_title = None
 
     def build(self, page):
         if ft is None:
             return None
         self._page = page
-        self._undo_button = ft.Button(
+        self._undo_button = _button(
             "Deshacer",
+            secondary=True,
             on_click=self._on_undo,
             disabled=True,
         )
-        self._redo_button = ft.Button(
+        self._redo_button = _button(
             "Rehacer",
+            secondary=True,
             on_click=self._on_redo,
             disabled=True,
         )
         self._undo_list = ft.Column(
             controls=[],
-            height=150,
-            spacing=4,
+            height=220,
+            spacing=8,
             scroll=ft.ScrollMode.AUTO,
         )
         self._redo_list = ft.Column(
             controls=[],
-            height=150,
-            spacing=4,
+            height=220,
+            spacing=8,
             scroll=ft.ScrollMode.AUTO,
         )
         self._message = ft.Text()
+        self._message.style = ft.TextStyle(color=PALETTE["text"])
+        self._undo_title = ft.Text("Pila Deshacer", weight="bold")
+        self._redo_title = ft.Text("Pila Rehacer", weight="bold")
         self.refresh()
         return ft.Column(
             controls=[
                 ft.Text(self.title, size=18, weight="bold"),
-                ft.Container(
-                    content=ft.Column(
+                _panel(
+                    ft.Column(
                         controls=[
                             ft.Row(
                                 controls=[
@@ -54,32 +136,70 @@ class ActionHistoryCard:
                                     self._redo_button,
                                 ],
                                 wrap=True,
+                                spacing=8,
                             ),
                             self._message,
-                            ft.Text("Acciones disponibles para deshacer"),
-                            self._undo_list,
-                            ft.Text("Acciones disponibles para rehacer"),
-                            self._redo_list,
+                            ft.ResponsiveRow(
+                                controls=[
+                                    ft.Container(
+                                        content=ft.Column(
+                                            controls=[
+                                                self._undo_title,
+                                                self._undo_list,
+                                            ],
+                                            spacing=8,
+                                        ),
+                                        col={"xs": 12, "md": 6},
+                                    ),
+                                    ft.Container(
+                                        content=ft.Column(
+                                            controls=[
+                                                self._redo_title,
+                                                self._redo_list,
+                                            ],
+                                            spacing=8,
+                                        ),
+                                        col={"xs": 12, "md": 6},
+                                    ),
+                                ],
+                                columns=12,
+                                spacing=12,
+                                run_spacing=12,
+                            ),
                         ],
-                        spacing=8,
+                        spacing=12,
                     ),
-                    border=ft.Border.all(1, ft.Colors.OUTLINE),
-                    padding=10,
-                    border_radius=8,
                 )
-            ]
+            ],
+            spacing=12,
         )
 
     def refresh(self):
         state = self.controller.obtener_estado_historial()
         self._undo_button.disabled = state["undo_count"] == 0
         self._redo_button.disabled = state["redo_count"] == 0
+        self._undo_title.value = f"Pila Deshacer ({state['undo_count']})"
+        self._redo_title.value = f"Pila Rehacer ({state['redo_count']})"
         self._undo_list.controls = [
-            ft.Text(action) for action in state["undo"]
-        ] or [ft.Text("No hay acciones.")]
+            ft.Container(
+                content=ft.Text(action),
+                padding=12,
+                border=ft.Border.all(1, PALETTE["border"]),
+                border_radius=8,
+                bgcolor=PALETTE["surface_subtle"],
+            )
+            for action in state["undo"]
+        ] or [ft.Text("No hay acciones.", color=PALETTE["text_secondary"])]
         self._redo_list.controls = [
-            ft.Text(action) for action in state["redo"]
-        ] or [ft.Text("No hay acciones.")]
+            ft.Container(
+                content=ft.Text(action),
+                padding=12,
+                border=ft.Border.all(1, PALETTE["border"]),
+                border_radius=8,
+                bgcolor=PALETTE["surface_subtle"],
+            )
+            for action in state["redo"]
+        ] or [ft.Text("No hay acciones.", color=PALETTE["text_secondary"])]
 
     def _complete_history_action(self, action, operation):
         if action is None:
@@ -89,6 +209,7 @@ class ActionHistoryCard:
                 else "No hay acciones para rehacer."
             )
             self._message.color = ft.Colors.AMBER_300
+            _set_status_style(self._message, "warning")
             self.refresh()
             self._page.update()
             return
@@ -100,6 +221,7 @@ class ActionHistoryCard:
             else f"Acción rehecha: {description}"
         )
         self._message.color = ft.Colors.GREEN_300
+        _set_status_style(self._message, "success")
         if self.on_model_change is not None:
             self.on_model_change()
         else:
@@ -112,6 +234,7 @@ class ActionHistoryCard:
         except (RuntimeError, ValueError) as error:
             self._message.value = f"No se pudo deshacer: {error}"
             self._message.color = ft.Colors.RED_300
+            _set_status_style(self._message, "error")
             self.refresh()
             self._page.update()
             return
@@ -123,6 +246,7 @@ class ActionHistoryCard:
         except (RuntimeError, ValueError) as error:
             self._message.value = f"No se pudo rehacer: {error}"
             self._message.color = ft.Colors.RED_300
+            _set_status_style(self._message, "error")
             self.refresh()
             self._page.update()
             return
@@ -147,78 +271,95 @@ class PackageManagementCard:
             return None
 
         self._page = page
-        self._package_code = ft.TextField(label="Código")
-        self._destination = ft.TextField(label="Destino")
-        self._weight = ft.TextField(label="Peso")
-        self._priority = ft.TextField(label="Prioridad")
-        self._search_code = ft.TextField(label="Código para buscar")
-        self._selected_package = ft.Dropdown(
-            label="Paquete seleccionado",
+        self._package_code = _text_field("Código")
+        self._destination = _text_field("Destino")
+        self._weight = _text_field("Peso")
+        self._priority = _text_field("Prioridad")
+        self._search_code = _text_field("Código para buscar")
+        self._selected_package = _dropdown(
+            "Paquete seleccionado",
             options=[],
         )
-        self._selected_route = ft.Dropdown(
-            label="Ruta activa para despacho",
+        self._selected_route = _dropdown(
+            "Ruta activa para despacho",
             options=[],
         )
-        self._package_list = ft.Column(
+        self._package_list = ft.Row(
             controls=[],
-            height=180,
+            wrap=True,
             spacing=8,
-            scroll=ft.ScrollMode.AUTO,
+            run_spacing=8,
         )
         self._message = ft.Text()
+        self._message.style = ft.TextStyle(color=PALETTE["text"])
 
         self._refresh_packages()
-        return ft.Container(
+        return _panel(
             content=ft.Column(
                 controls=[
                     ft.Text("Paquetes por prioridad", size=16, weight="bold"),
-                    ft.Row(
-                        controls=[
+                    _form_row(
+                        [
                             self._package_code,
                             self._destination,
                             self._weight,
                             self._priority,
                         ],
-                        wrap=True,
-                    ),
-                    ft.Button("Agregar", on_click=self._on_add),
-                    ft.Row(
-                        controls=[
-                            self._search_code,
-                            ft.Button("Buscar por código", on_click=self._on_search),
+                        [
+                            {"xs": 12, "sm": 6},
+                            {"xs": 12, "sm": 6},
+                            {"xs": 12, "sm": 6},
+                            {"xs": 12, "sm": 6},
                         ],
-                        wrap=True,
                     ),
-                    ft.Row(
-                        controls=[
+                    _button("Agregar", on_click=self._on_add),
+                    _form_row(
+                        [
+                            self._search_code,
+                            _button(
+                                "Buscar",
+                                secondary=True,
+                                on_click=self._on_search,
+                            ),
+                        ],
+                        [
+                            {"xs": 12, "md": 7},
+                            {"xs": 12, "md": 5},
+                        ],
+                    ),
+                    _form_row(
+                        [
                             self._selected_package,
-                            ft.Button(
-                                "Eliminar seleccionado",
+                            _button(
+                                "Eliminar",
+                                secondary=True,
                                 on_click=self._on_delete,
                             ),
                         ],
-                        wrap=True,
+                        [
+                            {"xs": 12, "md": 7},
+                            {"xs": 12, "md": 5},
+                        ],
                     ),
-                    ft.Row(
-                        controls=[
+                    _form_row(
+                        [
                             self._selected_route,
-                            ft.Button(
-                                "Despachar siguiente",
+                            _button(
+                                "Despachar",
                                 on_click=self._on_dispatch,
                             ),
                         ],
-                        wrap=True,
+                        [
+                            {"xs": 12, "md": 7},
+                            {"xs": 12, "md": 5},
+                        ],
                     ),
                     self._message,
                     ft.Text("Cola ordenada: prioridad más alta primero"),
                     self._package_list,
                 ],
-                spacing=12,
+                spacing=14,
             ),
-            border=ft.Border.all(1, ft.Colors.OUTLINE),
-            padding=16,
-            border_radius=8,
         )
 
     def _refresh_packages(self, selected_code=None):
@@ -266,9 +407,42 @@ class PackageManagementCard:
             else None
         )
         self._package_list.controls = [
-            ft.Text(
-                f"{index}. {package.codigo} — {package.destino} | "
-                f"{package.peso:g} kg | prioridad {package.prioridad}"
+            ft.Container(
+                content=ft.Row(
+                    controls=[
+                        ft.Container(
+                            content=ft.Text(
+                                f"#{index}",
+                                weight="bold",
+                                color=PALETTE["primary"],
+                            ),
+                            bgcolor=PALETTE["primary_soft"],
+                            padding=8,
+                            border_radius=8,
+                        ),
+                        ft.Column(
+                            controls=[
+                                ft.Text(
+                                    f"{package.codigo} — {package.destino}",
+                                    weight="bold",
+                                ),
+                                ft.Text(
+                                    f"{package.peso:g} kg | "
+                                    f"Prioridad {package.prioridad}"
+                                ),
+                            ],
+                            spacing=4,
+                            tight=True,
+                        ),
+                    ],
+                    spacing=8,
+                    vertical_alignment=ft.CrossAxisAlignment.CENTER,
+                ),
+                width=250,
+                padding=12,
+                border=ft.Border.all(1, PALETTE["border"]),
+                border_radius=10,
+                bgcolor=PALETTE["surface"],
             )
             for index, package in enumerate(self.packages, start=1)
         ] or [ft.Text("Sin paquetes pendientes")]
@@ -283,6 +457,10 @@ class PackageManagementCard:
         self._refresh_packages(selected_code)
         self._message.value = message
         self._message.color = ft.Colors.RED_700 if is_error else ft.Colors.GREEN_700
+        _set_status_style(
+            self._message,
+            "error" if is_error else "success",
+        )
         if model_changed and self.on_model_change is not None:
             self.on_model_change()
         else:
@@ -379,8 +557,17 @@ class DataListCard:
     def build(self, items):
         if ft is None:
             return None
-        entries = [ft.Text(str(item)) for item in items] or [ft.Text("Sin elementos")]
-        return ft.Container(
+        entries = [
+            ft.Container(
+                content=ft.Text(str(item), color=PALETTE["text"]),
+                padding=12,
+                border=ft.Border.all(1, PALETTE["border"]),
+                border_radius=8,
+                bgcolor=PALETTE["surface"],
+            )
+            for item in items
+        ] or [ft.Text("Sin elementos", color=PALETTE["text_secondary"])]
+        return _panel(
             content=ft.Column(
                 controls=[
                     ft.Text(self.title, size=16, weight="bold"),
@@ -393,9 +580,6 @@ class DataListCard:
                 ],
                 spacing=12,
             ),
-            border=ft.Border.all(1, ft.Colors.OUTLINE),
-            padding=16,
-            border_radius=8,
         )
 
 
@@ -429,51 +613,66 @@ class _LinkedEntityManagementCard:
 
         self._page = page
         self._fields = {
-            name: ft.TextField(label=label, value=initial)
+            name: _text_field(label, value=initial)
             for name, label, initial in self.fields
         }
-        self._search_code = ft.TextField(label="Código para buscar")
-        self._selected_item = ft.Dropdown(label="Elemento seleccionado", options=[])
+        self._search_code = _text_field("Código para buscar")
+        self._selected_item = _dropdown("Elemento seleccionado", options=[])
         self._item_list = ft.Column(
             controls=[],
-            height=220,
+            height=140,
             spacing=8,
             scroll=ft.ScrollMode.AUTO,
         )
         self._message = ft.Text()
+        self._message.style = ft.TextStyle(color=PALETTE["text"])
         self._refresh_items()
 
-        return ft.Container(
+        return _panel(
             content=ft.Column(
                 controls=[
                     ft.Text(self.title, size=16, weight="bold"),
-                    ft.Row(controls=list(self._fields.values()), wrap=True),
-                    ft.Button("Registrar", on_click=self._on_add),
-                    ft.Row(
-                        controls=[
-                            self._search_code,
-                            ft.Button("Buscar por código", on_click=self._on_search),
+                    _form_row(
+                        list(self._fields.values()),
+                        [
+                            {"xs": 12, "sm": 6}
+                            for _ in self._fields
                         ],
-                        wrap=True,
                     ),
-                    ft.Row(
-                        controls=[
+                    _button("Registrar", on_click=self._on_add),
+                    _form_row(
+                        [
+                            self._search_code,
+                            _button(
+                                "Buscar",
+                                secondary=True,
+                                on_click=self._on_search,
+                            ),
+                        ],
+                        [
+                            {"xs": 12, "md": 7},
+                            {"xs": 12, "md": 5},
+                        ],
+                    ),
+                    _form_row(
+                        [
                             self._selected_item,
-                            ft.Button(
-                                "Eliminar seleccionado",
+                            _button(
+                                "Eliminar",
+                                secondary=True,
                                 on_click=self._on_delete,
                             ),
                         ],
-                        wrap=True,
+                        [
+                            {"xs": 12, "sm": 8},
+                            {"xs": 12, "sm": 4},
+                        ],
                     ),
                     self._message,
                     self._item_list,
                 ],
-                spacing=12,
+                spacing=14,
             ),
-            border=ft.Border.all(1, ft.Colors.OUTLINE),
-            padding=16,
-            border_radius=8,
         )
 
     def _refresh_items(self, selected_code=None):
@@ -494,12 +693,32 @@ class _LinkedEntityManagementCard:
             else None
         )
         self._item_list.controls = [
-            ft.Text(self._item_label(item))
+            ft.Container(
+                content=ft.Text(
+                    self._item_display(item),
+                    color=PALETTE["text"],
+                ),
+                padding=12,
+                border=ft.Border.all(1, self._item_border_color(item)),
+                border_radius=8,
+                bgcolor=PALETTE["surface"],
+            )
             for item in self.items
-        ] or [ft.Text(f"No hay {self.empty_label}.")]
+        ] or [
+            ft.Text(
+                f"No hay {self.empty_label}.",
+                color=PALETTE["text_secondary"],
+            )
+        ]
 
     def _item_label(self, item):
         return str(item)
+
+    def _item_display(self, item):
+        return self._item_label(item)
+
+    def _item_border_color(self, _item):
+        return PALETTE["border"]
 
     def _finish_operation(
         self,
@@ -511,6 +730,10 @@ class _LinkedEntityManagementCard:
         self._refresh_items(selected_code)
         self._message.value = message
         self._message.color = ft.Colors.RED_700 if is_error else ft.Colors.GREEN_700
+        _set_status_style(
+            self._message,
+            "error" if is_error else "success",
+        )
         if model_changed and self.on_model_change is not None:
             self.on_model_change()
         else:
@@ -601,6 +824,20 @@ class VehicleManagementCard(_LinkedEntityManagementCard):
             on_model_change,
         )
 
+    def _item_display(self, item):
+        return (
+            f"Vehiculo(codigo={item.codigo}, "
+            f"capacidad_maxima={item.capacidad_maxima}, "
+            f"estado={item.estado})\n"
+            f"Capacidad máxima: {item.capacidad_maxima:g} kg\n"
+            f"Estado: {item.estado}"
+        )
+
+    def _item_border_color(self, item):
+        if str(item.estado).strip().casefold() == "disponible":
+            return PALETTE["success"]
+        return PALETTE["warning"]
+
 
 class WarehouseManagementCard(_LinkedEntityManagementCard):
     """Formulario de alta, búsqueda y eliminación de almacenes."""
@@ -629,17 +866,26 @@ class WarehouseManagementCard(_LinkedEntityManagementCard):
         self._previous_button = None
         self._next_button = None
 
+    def _item_display(self, item):
+        return (
+            f"Código: {item.codigo}\n"
+            f"Nombre: {item.nombre}\n"
+            f"Ubicación: {item.ubicacion}"
+        )
+
     def build(self, page):
         if ft is None:
             return super().build(page)
 
         self._current_summary = ft.Text()
-        self._previous_button = ft.Button(
+        self._previous_button = _button(
             "Anterior",
+            secondary=True,
             on_click=self._on_previous,
         )
-        self._next_button = ft.Button(
+        self._next_button = _button(
             "Siguiente",
+            secondary=True,
             on_click=self._on_next,
         )
         card = super().build(page)
@@ -715,24 +961,25 @@ class CircularRouteCard:
             return None
 
         self._page = page
-        self._route_code = ft.TextField(label="Código de ruta")
-        self._origin = ft.TextField(label="Origen")
-        self._destination = ft.TextField(label="Destino")
-        self._stops = ft.TextField(
-            label="Paradas (separadas por comas)",
+        self._route_code = _text_field("Código de ruta")
+        self._origin = _text_field("Origen")
+        self._destination = _text_field("Destino")
+        self._stops = _text_field(
+            "Paradas (separadas por comas)",
             hint_text="Ejemplo: Centro, Norte, Sur",
         )
-        self._route_selector = ft.Dropdown(
-            label="Ruta",
+        self._route_selector = _dropdown(
+            "Ruta",
             options=[],
             on_select=self._on_route_selected,
         )
-        self._search_code = ft.TextField(label="Buscar ruta por código")
-        self._vehicle_selector = ft.Dropdown(
-            label="Vehículo registrado",
+        self._search_code = _text_field("Buscar ruta por código")
+        self._vehicle_selector = _dropdown(
+            "Vehículo registrado",
             options=[],
         )
         self._message = ft.Text()
+        self._message.style = ft.TextStyle(color=PALETTE["text"])
         self._route_summary = ft.Text()
         self._vehicle_summary = ft.Text()
         self._position_summary = ft.Text()
@@ -747,74 +994,122 @@ class CircularRouteCard:
         self._refresh_vehicles()
         self._refresh_route()
 
-        return ft.Container(
+        return _panel(
             content=ft.Column(
                 controls=[
                     ft.Text("Rutas y recorrido circular", size=16, weight="bold"),
-                    ft.Row(
-                        controls=[
+                    _form_row(
+                        [
                             self._route_code,
                             self._origin,
                             self._destination,
                             self._stops,
                         ],
-                        wrap=True,
+                        [
+                            {"xs": 12, "sm": 6},
+                            {"xs": 12, "sm": 6},
+                            {"xs": 12, "sm": 6},
+                            {"xs": 12, "sm": 6},
+                        ],
                     ),
-                    ft.Button("Crear ruta", on_click=self._on_add_route),
-                    ft.Row(
-                        controls=[
+                    _button("Crear ruta", on_click=self._on_add_route),
+                    _form_row(
+                        [
                             self._search_code,
-                            ft.Button(
-                                "Buscar ruta",
+                            _button(
+                                "Buscar",
+                                secondary=True,
                                 on_click=self._on_search_route,
                             ),
                         ],
-                        wrap=True,
+                        [
+                            {"xs": 12, "sm": 8},
+                            {"xs": 12, "sm": 4},
+                        ],
                     ),
                     self._route_selector,
-                    ft.Row(
-                        controls=[
-                            self._vehicle_selector,
-                            ft.Button(
-                                "Asignar / cambiar vehículo",
+                    _form_row(
+                        [self._vehicle_selector],
+                        [{"xs": 12}],
+                    ),
+                    _form_row(
+                        [
+                            _button(
+                                "Asignar",
                                 on_click=self._on_assign_vehicle,
                             ),
-                            ft.Button(
-                                "Desasignar vehículo",
+                            _button(
+                                "Desasignar",
+                                secondary=True,
                                 on_click=self._on_unassign_vehicle,
                             ),
                         ],
-                        wrap=True,
+                        [
+                            {"xs": 12, "md": 6},
+                            {"xs": 12, "md": 6},
+                        ],
                     ),
                     ft.Row(
                         controls=[
-                            ft.Button(
+                            _button(
                                 "Anterior",
                                 icon=ft.Icons.ARROW_BACK,
+                                secondary=True,
                                 on_click=self._on_previous,
                             ),
-                            ft.Button(
+                            _button(
                                 "Siguiente",
                                 icon=ft.Icons.ARROW_FORWARD,
+                                secondary=True,
                                 on_click=self._on_next,
                             ),
                         ],
                         wrap=True,
                     ),
                     self._message,
-                    self._route_summary,
-                    self._vehicle_summary,
-                    self._position_summary,
-                    self._stop_row,
-                    ft.Text("Paquetes asociados", weight="bold"),
-                    self._package_summary,
-                    self._loop_summary,
+                    ft.Container(
+                        content=ft.Column(
+                            controls=[
+                                self._route_summary,
+                                self._vehicle_summary,
+                                self._position_summary,
+                            ],
+                            spacing=6,
+                        ),
+                        bgcolor=PALETTE["surface_subtle"],
+                        border=ft.Border.all(1, PALETTE["border"]),
+                        border_radius=8,
+                        padding=12,
+                    ),
+                    ft.Container(
+                        content=self._stop_row,
+                        bgcolor=PALETTE["surface_subtle"],
+                        border=ft.Border.all(1, PALETTE["border"]),
+                        border_radius=8,
+                        padding=12,
+                    ),
+                    ft.Container(
+                        content=ft.Column(
+                            controls=[
+                                ft.Text("Paquetes asociados", weight="bold"),
+                                self._package_summary,
+                            ],
+                            spacing=8,
+                        ),
+                        bgcolor=PALETTE["surface_subtle"],
+                        border=ft.Border.all(1, PALETTE["border"]),
+                        border_radius=8,
+                        padding=12,
+                    ),
+                    ft.Container(
+                        content=self._loop_summary,
+                        bgcolor=PALETTE["primary_soft"],
+                        border_radius=8,
+                        padding=10,
+                    ),
                 ],
-                spacing=12,
+                spacing=14,
             ),
-            border=ft.Border.all(1, ft.Colors.OUTLINE),
-            padding=16,
-            border_radius=8,
         )
 
     def _refresh_routes(self, selected_code=None):
@@ -866,6 +1161,10 @@ class CircularRouteCard:
         self._refresh_route()
         self._message.value = message
         self._message.color = ft.Colors.RED_300 if is_error else ft.Colors.GREEN_300
+        _set_status_style(
+            self._message,
+            "error" if is_error else "success",
+        )
         if model_changed and self.on_model_change is not None:
             self.on_model_change()
         else:
@@ -1008,10 +1307,13 @@ class CircularRouteCard:
         self._package_summary.controls = [
             ft.Text(
                 f"{package.codigo} — {package.destino} | "
-                f"{package.peso:g} kg | prioridad {package.prioridad}"
+                f"{package.peso:g} kg | prioridad {package.prioridad}",
+                color=PALETTE["text"],
             )
             for package in detail["paquetes"]
-        ] or [ft.Text("Sin paquetes asociados")]
+        ] or [
+            ft.Text("Sin paquetes asociados", color=PALETTE["text_secondary"])
+        ]
         self._position_summary.value = (
             f"Estado del recorrido: parada {current_index + 1} de {len(stops)}"
             if current_index is not None
@@ -1041,7 +1343,7 @@ class CircularRouteCard:
                     bgcolor=ft.Colors.GREEN_100 if is_current else ft.Colors.BLUE_50,
                     border=ft.Border.all(
                         2 if is_current else 1,
-                        ft.Colors.GREEN_700 if is_current else ft.Colors.OUTLINE,
+                        ft.Colors.GREEN_700 if is_current else PALETTE["border"],
                     ),
                     padding=10,
                     border_radius=8,
