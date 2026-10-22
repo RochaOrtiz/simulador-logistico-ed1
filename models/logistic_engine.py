@@ -11,21 +11,7 @@ from models.structures import (
 from math import isfinite
 from numbers import Real
 
-"""---------------------------------------------------------------"""
-def _buscar_entidad_por_codigo(estructura, codigo, nombre_entidad):
-    """Busca una entidad en una lista enlazada usando un código normalizado."""
-    if not isinstance(codigo, str) or not codigo.strip():
-        raise ValueError(f"El código del {nombre_entidad} es obligatorio.")
 
-    codigo_buscado = codigo.strip().casefold()
-    actual = estructura.head
-    while actual is not None:
-        if actual.data.codigo.strip().casefold() == codigo_buscado:
-            return actual.data
-        actual = actual.next
-    return None
-
-"""---------------------------------------------------------------"""
 class LogisticEngine:
     """Motor logístico que gestiona paquetes, vehículos, rutas y almacenes."""
 
@@ -37,6 +23,9 @@ class LogisticEngine:
         self._almacen_actual = None
         self.undo_redo_manager = UndoRedoManager()
 
+    # ==================================================
+    # GESTIÓN DE PAQUETES PENDIENTES
+    # ==================================================
     def _agregar_paquete_sin_historial(self, paquete):
         """Inserta un paquete sin registrar la acción en el historial."""
         if paquete is None:
@@ -76,6 +65,10 @@ class LogisticEngine:
         ruta.paquetes.eliminar(paquete)
         return True
 
+    
+    # ==================================================
+    # VALIDACIÓN DE RUTAS Y DESPACHOS
+    # ==================================================
     def _validar_ruta_activa_para_despacho(self, codigo_ruta):
         """Devuelve una ruta válida y activa o falla antes de alterar paquetes."""
         ruta = self.buscar_ruta(codigo_ruta)
@@ -146,6 +139,10 @@ class LogisticEngine:
                 "capacidad suficiente o una decisión del usuario."
             )
 
+    # ==================================================
+    # UNDO/REDO DE DESPACHOS
+    # ==================================================
+
     def _rehacer_despacho_sin_historial(self, ruta, paquete):
         """Vuelve a vincular el paquete y retirarlo de la cola pendiente."""
         if self._validar_ruta_activa_para_despacho(ruta.codigo) is not ruta:
@@ -164,6 +161,10 @@ class LogisticEngine:
             return False
         self._restaurar_cola_paquetes_sin_historial(paquetes_anteriores)
         return True
+
+    # ==================================================
+    # GESTIÓN DE VEHÍCULOS
+    # ==================================================
 
     def _agregar_vehiculo_sin_historial(self, vehiculo):
         """Inserta un vehículo a la lista sin registrar la acción."""
@@ -186,6 +187,9 @@ class LogisticEngine:
         """Indica si un vehículo está asignado actualmente a alguna ruta."""
         return any(ruta.vehiculo is vehiculo for ruta in self.listar_rutas())
 
+    # ==================================================
+    # RESTAURACIÓN DE LISTAS ENLAZADAS PARA UNDO/REDO (VEHIVULO , ALMACENES)
+    # ==================================================
     def _restaurar_lista_enlazada_sin_historial(self, estructura, elementos):
         """Restaura el orden previo de una lista enlazada sin crear historial."""
         while estructura.head is not None:
@@ -193,6 +197,23 @@ class LogisticEngine:
         for elemento in elementos:
             estructura.insertar_final(elemento)
 
+#--------------------------------------------------------------------------------------------------#
+    def _buscar_entidad_por_codigo(self, estructura, codigo, nombre_entidad):
+        """Busca una entidad en una lista enlazada usando un código normalizado."""
+        if not isinstance(codigo, str) or not codigo.strip():
+            raise ValueError(f"El código del {nombre_entidad} es obligatorio.")
+
+        codigo_buscado = codigo.strip().casefold()
+        actual = estructura.head
+        while actual is not None:
+            if actual.data.codigo.strip().casefold() == codigo_buscado:
+                return actual.data
+            actual = actual.next
+        return None
+
+    # ==================================================
+    # GESTIÓN DE RUTAS
+    # ==================================================
     def _agregar_ruta_sin_historial(self, ruta):
         """Inserta una ruta en la cola circular sin registrar la acción."""
         if not isinstance(ruta, Ruta):
@@ -203,6 +224,28 @@ class LogisticEngine:
             )
         self.rutas.enqueue(ruta)
 
+    def _eliminar_ruta_sin_historial(self, ruta):
+        """Elimina una ruta de la cola circular sin registrar la acción."""
+        if ruta is None or self.rutas.is_empty():
+            return False
+
+        elementos = []
+        encontrado = False
+        while not self.rutas.is_empty():
+            elemento = self.rutas.dequeue()
+            if elemento is ruta and not encontrado:
+                encontrado = True
+            else:
+                elementos.append(elemento)
+
+        self.rutas.clear()
+        for elemento in elementos:
+            self.rutas.enqueue(elemento)
+        return encontrado
+    
+    # ==================================================
+    # VALIDACIÓN Y ASIGNACIÓN DE VEHÍCULOS A RUTAS
+    # ==================================================
     def _validar_vehiculo_para_ruta(self, vehiculo, ruta_actual=None):
         """Valida que el vehículo registrado pueda quedar activo en una ruta."""
         if self.buscar_vehiculo(vehiculo.codigo) is not vehiculo:
@@ -225,25 +268,6 @@ class LogisticEngine:
         if vehiculo is not None:
             vehiculo.estado = "En ruta"
 
-    def _eliminar_ruta_sin_historial(self, ruta):
-        """Elimina una ruta de la cola circular sin registrar la acción."""
-        if ruta is None or self.rutas.is_empty():
-            return False
-
-        elementos = []
-        encontrado = False
-        while not self.rutas.is_empty():
-            elemento = self.rutas.dequeue()
-            if elemento is ruta and not encontrado:
-                encontrado = True
-            else:
-                elementos.append(elemento)
-
-        self.rutas.clear()
-        for elemento in elementos:
-            self.rutas.enqueue(elemento)
-        return encontrado
-
     def _eliminar_ruta_y_liberar_vehiculo_sin_historial(self, ruta):
         """Elimina una ruta y libera su vehículo si ya no tiene otra asignación."""
         if not self._eliminar_ruta_sin_historial(ruta):
@@ -253,6 +277,10 @@ class LogisticEngine:
             vehiculo.estado = "Disponible"
         return True
 
+
+# ==================================================
+# GESTIÓN DE ALMACENES
+# ==================================================
     def _agregar_almacen_sin_historial(self, almacen):
         """Inserta un almacén a la lista sin registrar la acción."""
         if almacen is None:
@@ -290,6 +318,9 @@ class LogisticEngine:
                 self.almacenes.head.data if self.almacenes.head is not None else None
             )
 
+# ==================================================
+# GESTIÓN DE PAQUETES
+# ==================================================
 
     def agregar_paquete(self, paquete):
         """Agrega un paquete a la cola de prioridad."""
@@ -360,7 +391,25 @@ class LogisticEngine:
             ),
         })
         return paquete
-    
+
+    def listar_paquetes(self):
+        """Devuelve los paquetes ordenados por prioridad, de mayor a menor."""
+        resultado = []
+        actual = self.paquetes.head
+        while actual is not None:
+            resultado.append(actual.data)
+            actual = actual.next
+        return resultado
+
+    def obtener_paquete_siguiente(self):
+        """Retorna el próximo paquete a despachar sin eliminarlo."""
+        if self.paquetes.is_empty():
+            return None
+        return self.paquetes.head.data
+
+# ==================================================
+# GESTIÓN DE VEHÍCULOS
+# ==================================================
 
     def agregar_vehiculo(self, vehiculo):
         """Agrega un vehículo a la lista de vehículos."""
@@ -382,7 +431,7 @@ class LogisticEngine:
 
     def buscar_vehiculo(self, codigo):
         """Busca un vehículo por código y devuelve None si no existe."""
-        return _buscar_entidad_por_codigo(self.vehiculos, codigo, "vehículo")
+        return self._buscar_entidad_por_codigo(self.vehiculos, codigo, "vehículo")
 
     def eliminar_vehiculo(self, codigo):
         """Elimina el vehículo indicado por código y lo devuelve si existe."""
@@ -409,6 +458,19 @@ class LogisticEngine:
         })
         return vehiculo
 
+    def listar_vehiculos(self):
+        """Devuelve los vehículos registrados."""
+        resultado = []
+        actual = self.vehiculos.head
+        while actual is not None:
+            resultado.append(actual.data)
+            actual = actual.next
+        return resultado
+
+
+# ==================================================
+# GESTIÓN DE RUTAS
+# ==================================================
     def agregar_ruta(self, ruta):
         """Agrega una ruta a la cola circular de rutas."""
         if not isinstance(ruta, Ruta):
@@ -436,7 +498,19 @@ class LogisticEngine:
             if ruta.codigo.casefold() == codigo_buscado:
                 return ruta
         return None
+    
+    def listar_rutas(self):
+        """Devuelve las rutas registradas en orden de llegada."""
+        resultado = []
+        for indice in range(self.rutas.size):
+            posicion = (self.rutas.front + indice) % self.rutas.capacity
+            resultado.append(self.rutas.buffer[posicion])
+        return [ruta for ruta in resultado if ruta is not None]
 
+
+# ==================================================
+# ASIGNACIÓN DE VEHÍCULOS A RUTAS
+# ==================================================
     @staticmethod
     def _validar_vehiculo_disponible(vehiculo):
         if not isinstance(vehiculo.estado, str) or (
@@ -479,6 +553,10 @@ class LogisticEngine:
             vehiculo.estado = "Disponible"
         return ruta
 
+
+# ==================================================
+# GESTIÓN DE ALMACENES
+# ==================================================
     def agregar_almacen(self, almacen):
         """Agrega un almacén a la lista de almacenes."""
         if not isinstance(almacen, Almacen):
@@ -499,7 +577,7 @@ class LogisticEngine:
 
     def buscar_almacen(self, codigo):
         """Busca un almacén por código y devuelve None si no existe."""
-        return _buscar_entidad_por_codigo(self.almacenes, codigo, "almacén")
+        return self._buscar_entidad_por_codigo(self.almacenes, codigo, "almacén")
 
     def eliminar_almacen(self, codigo):
         """Elimina el almacén indicado por código y lo devuelve si existe."""
@@ -520,6 +598,19 @@ class LogisticEngine:
         })
         return almacen
 
+    def listar_almacenes(self):
+        """Devuelve los almacenes registrados."""
+        resultado = []
+        actual = self.almacenes.head
+        while actual is not None:
+            resultado.append(actual.data)
+            actual = actual.next
+        return resultado
+
+    
+# ==================================================
+# NAVEGACIÓN ENTRE ALMACENES
+# ==================================================
     def _nodo_almacen_actual(self):
         if self.almacenes.head is None:
             self._almacen_actual = None
@@ -566,6 +657,9 @@ class LogisticEngine:
             self._almacen_actual = nodo.next.data
         return self._almacen_actual
 
+# ==================================================
+# CONTROL DEL HISTORIAL: UNDO / REDO
+# ==================================================
     def deshacer_ultima_accion(self):
         """Deshace la última acción registrada."""
         return self.undo_redo_manager.undo()
@@ -573,47 +667,5 @@ class LogisticEngine:
     def rehacer_ultima_accion(self):
         """Rehace la última acción deshecha."""
         return self.undo_redo_manager.redo()
-
-    def listar_paquetes(self):
-        """Devuelve los paquetes ordenados por prioridad, de mayor a menor."""
-        resultado = []
-        actual = self.paquetes.head
-        while actual is not None:
-            resultado.append(actual.data)
-            actual = actual.next
-        return resultado
-
-    def listar_vehiculos(self):
-        """Devuelve los vehículos registrados."""
-        resultado = []
-        actual = self.vehiculos.head
-        while actual is not None:
-            resultado.append(actual.data)
-            actual = actual.next
-        return resultado
-
-    def listar_rutas(self):
-        """Devuelve las rutas registradas en orden de llegada."""
-        resultado = []
-        for indice in range(self.rutas.size):
-            posicion = (self.rutas.front + indice) % self.rutas.capacity
-            resultado.append(self.rutas.buffer[posicion])
-        return [ruta for ruta in resultado if ruta is not None]
-
-    def listar_almacenes(self):
-        """Devuelve los almacenes registrados."""
-        resultado = []
-        actual = self.almacenes.head
-        while actual is not None:
-            resultado.append(actual.data)
-            actual = actual.next
-        return resultado
-
-    def obtener_paquete_siguiente(self):
-        """Retorna el próximo paquete a despachar sin eliminarlo."""
-        if self.paquetes.is_empty():
-            return None
-        return self.paquetes.head.data
-
 
 LogistEngine = LogisticEngine

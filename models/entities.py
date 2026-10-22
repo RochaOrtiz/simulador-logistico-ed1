@@ -75,12 +75,14 @@ class Ruta:
             self.paradas.insertar_final(parada.strip())
 
     def listar_paquetes(self):
-        """Devuelve los paquetes asociados a la ruta en orden de despacho."""
-        paquetes = []
+        """Devuelve los paquetes asociados a la ruta."""
+        paquetes = DoublyLinkedList()
         actual = self.paquetes.head
+
         while actual is not None:
-            paquetes.append(actual.data)
+            paquetes.insertar_final(actual.data)
             actual = actual.next
+
         return paquetes
 
     def calcular_peso_total_paquetes(self):
@@ -102,8 +104,7 @@ class Ruta:
 
     def __repr__(self):
         return f"Ruta(codigo={self.codigo}, origen={self.origen}, destino={self.destino})"
-"""---------------------------------------------------------------"""
-
+"""--------------------------------------------------------------------------------------------"""
 class Almacen:
     """Representa un almacén del centro logístico."""
 

@@ -1304,14 +1304,19 @@ class CircularRouteCard:
             if vehicle is not None
             else "Vehículo: sin asignar"
         )
-        self._package_summary.controls = [
-            ft.Text(
-                f"{package.codigo} — {package.destino} | "
-                f"{package.peso:g} kg | prioridad {package.prioridad}",
-                color=PALETTE["text"],
+        package_controls = []
+        actual = detail["paquetes"].head
+        while actual is not None:
+            package = actual.data
+            package_controls.append(
+                ft.Text(
+                    f"{package.codigo} — {package.destino} | "
+                    f"{package.peso:g} kg | prioridad {package.prioridad}",
+                    color=PALETTE["text"],
+                )
             )
-            for package in detail["paquetes"]
-        ] or [
+            actual = actual.next
+        self._package_summary.controls = package_controls or [
             ft.Text("Sin paquetes asociados", color=PALETTE["text_secondary"])
         ]
         self._position_summary.value = (

@@ -59,19 +59,19 @@ class DoublyLinkedList:
         if actual is None:
             return
 
-        if actual.prev is None and actual.next is None:
+        if actual.prev is None and actual.next is None: #El nodo es el único elemento
             self.head = None
             self.tail = None
 
-        elif actual.prev is None:
+        elif actual.prev is None:   #Se elimina el primero
             self.head = actual.next
             self.head.prev = None
 
-        elif actual.next is None:
+        elif actual.next is None: #Se elimina el último
             self.tail = actual.prev
             self.tail.next = None
 
-        else:
+        else:                               #Se elimina uno del medio
             actual.prev.next = actual.next
             actual.next.prev = actual.prev
 
