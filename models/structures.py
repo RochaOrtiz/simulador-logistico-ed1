@@ -1,6 +1,6 @@
 from typing import Any
 
-
+"""---------------------------------------------------------------"""
 class Node:
     """Representa un nodo de una estructura enlazada."""
 
@@ -8,7 +8,7 @@ class Node:
         self.data = data
         self.next = None
         self.prev = None
-
+"""---------------------------------------------------------------"""
 class DoublyLinkedList:
     """Representa una lista doblemente enlazada."""
 
@@ -91,6 +91,7 @@ class DoublyLinkedList:
         return None
 
 
+"""---------------------------------------------------------------"""
 class CircularDoublyLinkedList:
     """Lista doblemente enlazada cuyos extremos están conectados entre sí."""
 
@@ -195,8 +196,9 @@ class CircularDoublyLinkedList:
         if self.current is not None:
             self.current = self.current.prev
         return self.current
+    
 
-
+"""---------------------------------------------------------------"""
 class Stack:
     """Representa una pila basada en nodos enlazados."""
 
@@ -240,6 +242,7 @@ class Stack:
         self.top = None
         self.size = 0    
 
+"""---------------------------------------------------------------"""
 class UndoRedoManager:
     """Gestiona las operaciones de deshacer y rehacer."""
 
@@ -324,7 +327,7 @@ class UndoRedoManager:
         self.undo_stack.push(accion)
 
         return accion
-
+"""---------------------------------------------------------------"""
 class PriorityNode:
     """Representa un nodo para una cola de prioridad."""
 
@@ -332,7 +335,7 @@ class PriorityNode:
         self.data = data
         self.priority = priority
         self.next = None
-
+"""---------------------------------------------------------------"""
 class PriorityQueue:
     """Representa una cola de prioridad basada en nodos."""
 
@@ -379,6 +382,7 @@ class PriorityQueue:
 
         return nodo.data
 
+"""---------------------------------------------------------------"""
 class CircularQueue:
     """Representa una cola FIFO circular basada en un buffer de capacidad fija."""
 

@@ -8,16 +8,25 @@ compatibles.
 
 ## Tabla de contenido
 
-- [Problema y objetivo](#problema-y-objetivo)
-- [Funcionalidades implementadas](#funcionalidades-implementadas)
-- [Tecnologías y requisitos](#tecnologías-y-requisitos)
-- [Instalación y ejecución en Windows](#instalación-y-ejecución-en-windows)
-- [Ejecución de las pruebas](#ejecución-de-las-pruebas)
-- [Estructura del proyecto](#estructura-del-proyecto)
-- [Arquitectura](#arquitectura)
-- [Estructuras de datos](#estructuras-de-datos)
-- [Estado y mejoras futuras](#estado-y-mejoras-futuras)
-- [Capturas de pantalla](#capturas-de-pantalla)
+- [Simulador de Logística Inteligente y Despacho de Recursos](#simulador-de-logística-inteligente-y-despacho-de-recursos)
+  - [Tabla de contenido](#tabla-de-contenido)
+  - [Problema y objetivo](#problema-y-objetivo)
+  - [Funcionalidades implementadas](#funcionalidades-implementadas)
+    - [Paquetes](#paquetes)
+    - [Vehículos](#vehículos)
+    - [Rutas](#rutas)
+    - [Almacenes](#almacenes)
+    - [Historial](#historial)
+  - [Tecnologías y requisitos](#tecnologías-y-requisitos)
+  - [Instalación y ejecución en Windows](#instalación-y-ejecución-en-windows)
+  - [Ejecución de las pruebas](#ejecución-de-las-pruebas)
+  - [Estructura del proyecto](#estructura-del-proyecto)
+  - [Arquitectura](#arquitectura)
+  - [Estructuras de datos](#estructuras-de-datos)
+  - [Estado y mejoras futuras](#estado-y-mejoras-futuras)
+    - [Implementado](#implementado)
+    - [Posibles mejoras (no implementadas)](#posibles-mejoras-no-implementadas)
+  - [Capturas de pantalla](#capturas-de-pantalla)
 
 ## Problema y objetivo
 

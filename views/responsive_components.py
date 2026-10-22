@@ -79,7 +79,7 @@ def _form_row(fields, columns):
         spacing=12,
         run_spacing=8,
     )
-
+"""-------------------------------------------------------------------------------"""
 
 class ActionHistoryCard:
     """Muestra y ejecuta las operaciones disponibles en el historial."""
@@ -252,7 +252,7 @@ class ActionHistoryCard:
             return
         self._complete_history_action(action, "redo")
 
-
+"""---------------------------------------------------------------"""
 class PackageManagementCard:
     """Formulario para operar los paquetes a través del controlador."""
 
@@ -547,7 +547,7 @@ class PackageManagementCard:
             model_changed=True,
         )
 
-
+"""---------------------------------------------------------------"""
 class DataListCard:
     """Contenedor simple para listar elementos del modelo."""
 
@@ -582,7 +582,7 @@ class DataListCard:
             ),
         )
 
-
+"""---------------------------------------------------------------"""
 class _LinkedEntityManagementCard:
     """Interfaz común para administrar entidades almacenadas en listas enlazadas."""
 
@@ -799,7 +799,7 @@ class _LinkedEntityManagementCard:
             model_changed=True,
         )
 
-
+"""---------------------------------------------------------------"""
 class VehicleManagementCard(_LinkedEntityManagementCard):
     """Formulario de alta, búsqueda y eliminación de vehículos."""
 
@@ -838,7 +838,7 @@ class VehicleManagementCard(_LinkedEntityManagementCard):
             return PALETTE["success"]
         return PALETTE["warning"]
 
-
+"""---------------------------------------------------------------"""
 class WarehouseManagementCard(_LinkedEntityManagementCard):
     """Formulario de alta, búsqueda y eliminación de almacenes."""
 
@@ -938,7 +938,7 @@ class WarehouseManagementCard(_LinkedEntityManagementCard):
         self._refresh_items()
         self._page.update()
 
-
+"""---------------------------------------------------------------"""
 class CircularRouteCard:
     """Permite administrar rutas y visualizar su recorrido circular."""
 

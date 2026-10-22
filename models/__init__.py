@@ -1,6 +1,7 @@
 """Exportaciones del modelo del proyecto."""
 
-from .logistic_engine import Almacen, LogisticEngine, Paquete, Ruta, Vehiculo, LogistEngine
+from .entities import Almacen, Paquete, Ruta, Vehiculo
+from .logistic_engine import LogisticEngine, LogistEngine
 from .structures import (
     CircularDoublyLinkedList,
     CircularQueue,

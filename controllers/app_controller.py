@@ -10,7 +10,6 @@ from models.logistic_engine import (
     Vehiculo,
 )
 
-
 def _texto_obligatorio(valor, campo):
     """Valida y normaliza un campo de texto obligatorio."""
     if not isinstance(valor, str) or not valor.strip():
@@ -61,6 +60,7 @@ class AppController:
         """Despacha el siguiente paquete prioritario hacia una ruta activa."""
         return self.engine.despachar_paquete(codigo_ruta)
 
+    
     def agregar_vehiculo(self, codigo, capacidad_maxima, estado="Disponible"):
         """Valida y registra un vehículo en la lista enlazada."""
         codigo = _texto_obligatorio(codigo, "código del vehículo")
